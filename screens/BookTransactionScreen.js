@@ -49,8 +49,60 @@ export default class TransactionScreen extends React.Component {
       }
       
     }
+   //defining the book isssue function
+    initiateBookIssue = async ()=>{
+    //add a transaction
+    db.collection("transaction").add({
+      'studentId' : this.state.scannedStudentId,
+      'bookId' : this.state.scannedBookId,
+      'data' : firebase.firestore.Timestamp.now().toDate(),
+      'transactionType' : "Issue"
+    })
+
+    //change book status
+    db.collection("books").doc(this.state.scannedBookId).update({
+      'bookAvailability' : false
+    })
+    //change number of issued books for student
+    db.collection("students").doc(this.state.scannedStudentId).update({
+      'numberOfBooksIssued' : firebase.firestore.FieldValue.increment(1)
+    })
+
+    this.setState({
+      scannedStudentId : '',
+      scannedBookId: ''
+    })
+  }
+    
+   //difining the book return function
+    
+    initiateBookReturn = async ()=>{
+    //add a transaction
+    db.collection("transactions").add({
+      'studentId' : this.state.scannedStudentId,
+      'bookId' : this.state.scannedBookId,
+      'date'   : firebase.firestore.Timestamp.now().toDate(),
+      'transactionType' : "Return"
+    })
+
+    //change book status
+    db.collection("books").doc(this.state.scannedBookId).update({
+      'bookAvailability' : true
+    })
+
+    //change book status
+    db.collection("students").doc(this.state.scannedStudentId).update({
+      'numberOfBooksIssued' : firebase.firestore.FieldValue.increment(-1)
+    })
+
+    this.setState({
+      scannedStudentId : '',
+      scannedBookId : ''
+    })
+  }
+
     HandleTransaction=async()=>{
-      var transactionMessage;
+      var transactionMessage =null;
       db.collection("books").doc(this.state.scannedBookId).get();
       .then((doc)=>{
         var book= doc.data()
@@ -115,8 +167,12 @@ export default class TransactionScreen extends React.Component {
               <Text style={styles.buttonText}>Scan</Text>
             </TouchableOpacity>
             </View>
+            <Text style={styles.transactionAlert}>{this.state.transactionMessage}</Text>
             <TouchableOpacity
-              style= {styles.submitButton} onPress={async()=> this.HandleTransaction}><Text style= {styles.submitButtonText}>Submit</Text></TouchableOpacity>
+             style= {styles.submitButton} onPress={async()=>{
+            var transactionMessage = await this.handleTransaction()}}>
+            <Text style= {styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
           </View>
         );
       }
